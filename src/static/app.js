@@ -553,6 +553,9 @@ document.addEventListener("DOMContentLoaded", () => {
         </ul>
       </div>
       <div class="activity-card-actions">
+        <button class="share-button" data-activity="${name}" title="Share this activity">
+          📤 Share
+        </button>
         ${
           currentUser
             ? `
@@ -575,6 +578,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
     deleteButtons.forEach((button) => {
       button.addEventListener("click", handleUnregister);
+    });
+
+    // Add click handler for share button
+    const shareButton = activityCard.querySelector(".share-button");
+    shareButton.addEventListener("click", () => {
+      shareActivity(name);
     });
 
     // Add click handler for register button (only when authenticated)
@@ -855,6 +864,127 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- Social Sharing ---
+
+  // Build a shareable URL for a given activity name
+  function getShareUrl(activityName) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("search", activityName);
+    return url.toString();
+  }
+
+  // Share an activity using the Web Share API when available, or a custom popover
+  function shareActivity(activityName) {
+    const shareUrl = getShareUrl(activityName);
+    const shareText = `Check out "${activityName}" at Mergington High School!`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: `${activityName} – Mergington High School`,
+          text: shareText,
+          url: shareUrl,
+        })
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            console.error("Share failed:", err);
+          }
+        });
+      return;
+    }
+
+    // Fallback: show a small popover with share options
+    showSharePopover(activityName, shareUrl, shareText);
+  }
+
+  // Show a share-options popover (used when Web Share API is unavailable)
+  function showSharePopover(activityName, shareUrl, shareText) {
+    // Remove any existing popover first
+    const existing = document.getElementById("share-popover");
+    if (existing) existing.remove();
+
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+
+    const popover = document.createElement("div");
+    popover.id = "share-popover";
+    popover.className = "share-popover";
+    popover.innerHTML = `
+      <div class="share-popover-content">
+        <div class="share-popover-header">
+          <span>Share activity</span>
+          <button class="share-popover-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="share-options">
+          <a class="share-option" id="share-copy" href="#" title="Copy link">
+            🔗 Copy Link
+          </a>
+          <a class="share-option"
+            href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}"
+            target="_blank" rel="noopener noreferrer" title="Share on Twitter">
+            🐦 Twitter / X
+          </a>
+          <a class="share-option"
+            href="https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}"
+            target="_blank" rel="noopener noreferrer" title="Share on WhatsApp">
+            💬 WhatsApp
+          </a>
+          <a class="share-option"
+            href="mailto:?subject=${encodeURIComponent(activityName + " – Mergington High")}&body=${encodedText}%0A%0A${encodedUrl}"
+            title="Share via Email">
+            ✉️ Email
+          </a>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(popover);
+
+    // Copy-link handler
+    popover.querySelector("#share-copy").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const copyBtn = popover.querySelector("#share-copy");
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+      } catch {
+        // Fallback for browsers that don't support the Clipboard API
+        // document.execCommand is deprecated but still widely supported as a fallback
+        const textarea = document.createElement("textarea");
+        textarea.value = shareUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      copyBtn.textContent = "✅ Copied!";
+      setTimeout(() => {
+        copyBtn.textContent = "🔗 Copy Link";
+      }, 2000);
+    });
+
+    // Close button
+    popover.querySelector(".share-popover-close").addEventListener("click", () => {
+      popover.remove();
+    });
+
+    // Close when clicking the backdrop (outside the popover content)
+    popover.addEventListener("click", (e) => {
+      if (e.target === popover) {
+        popover.remove();
+      }
+    });
+  }
+
+  // If the page was opened via a share link, pre-fill the search box
+  function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const search = params.get("search");
+    if (search) {
+      searchInput.value = search;
+      searchQuery = search;
+    }
+  }
+
   // Expose filter functions to window for future UI control
   window.activityFilters = {
     setDayFilter,
@@ -864,5 +994,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   checkAuthentication();
   initializeFilters();
+  checkUrlParams();
   fetchActivities();
 });
