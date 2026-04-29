@@ -32,6 +32,36 @@
   --info-light: #d1ecf1;
 }
 
+/* Dark mode overrides */
+body.dark-mode {
+  --primary: #7986cb;
+  --primary-light: #9fa8da;
+  --primary-dark: #3949ab;
+  --primary-text: #ffffff;
+
+  --secondary: #ffa040;
+  --secondary-light: #ffcc80;
+  --secondary-dark: #ff6f00;
+  --secondary-text: #ffffff;
+
+  --background: #121212;
+  --surface: #1e1e2e;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --border: #333355;
+  --border-light: #2a2a45;
+  --border-focus: #4a4a6e;
+
+  --success: #66bb6a;
+  --success-light: #1a3a1a;
+  --warning: #ffa726;
+  --warning-light: #3a2800;
+  --error: #ef5350;
+  --error-light: #3a0a0a;
+  --info: #4fc3f7;
+  --info-light: #0a2530;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -763,5 +793,23 @@ footer {
 }
 
 #logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Dark mode toggle button */
+#dark-mode-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 6px;
+}
+
+#dark-mode-toggle:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
